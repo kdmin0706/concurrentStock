@@ -10,6 +10,8 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/concurrentTest
     username: root
     password: 1234
+    hikari:
+      maximum-pool-size: 40
 
 logging:
   level:
