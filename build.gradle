@@ -40,8 +40,11 @@ dependencies {
 	// database
 	runtimeOnly 'com.mysql:mysql-connector-j'
 
-	// redis
+	// redis(Lettuce)
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// redis(redisson)
+	implementation 'org.redisson:redisson-spring-boot-starter:3.23.2'
 }
 
 tasks.named('test') {
