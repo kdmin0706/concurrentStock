@@ -26,9 +26,12 @@ class OptimisticLockStockServiceTest {
   @Autowired
   private OptimisticLockStockFacade optimisticLockStockFacade;
 
+  private Stock stock;
+
   @BeforeEach
   void setUp() {
-    stockRepository.save(new Stock(1L, 100L));
+    stock = new Stock(1L, 100L);
+    stockRepository.save(stock);
   }
 
   @AfterEach
@@ -41,23 +44,23 @@ class OptimisticLockStockServiceTest {
   @DisplayName("상품의 재고를 감소시킵니다.")
   void decreaseStock() {
     // given // when
-    stockService.decrease(1L, 1L);
+    stockService.decrease(stock.getId(), 1L);
 
     // then
-    Stock stock = stockRepository.findById(1L).orElseThrow();
-    assertThat(99L).isEqualTo(stock.getQuantity());
+    Stock persistStock = stockRepository.findById(stock.getId()).orElseThrow();
+    assertThat(99L).isEqualTo(persistStock.getQuantity());
   }
 
   @Test
   public void 동시에_100개의_요청() throws InterruptedException {
     int threadCount = 100;  //100개의 요청을 보냄
-    ExecutorService executorService = Executors.newFixedThreadPool(32);
+    ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
     CountDownLatch latch = new CountDownLatch(threadCount);
 
     for (int i = 0; i < threadCount; i++) {
       executorService.submit(() -> {
         try {
-          optimisticLockStockFacade.decrease(1L, 1L);
+          optimisticLockStockFacade.decrease(stock.getId(), 1L);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         } finally {
@@ -68,7 +71,7 @@ class OptimisticLockStockServiceTest {
 
     latch.await();
 
-    Stock stock = stockRepository.findById(1L).orElseThrow();
-    assertThat(stock.getQuantity()).isZero();
+    Stock persistStock = stockRepository.findById(stock.getId()).orElseThrow();
+    assertThat(persistStock.getQuantity()).isZero();
   }
 }

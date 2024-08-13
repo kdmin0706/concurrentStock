@@ -22,9 +22,12 @@ class RedissonLockStockFacadeTest {
   @Autowired
   private RedissonLockStockFacade redissonLockStockFacade;
 
+  private Stock stock;
+
   @BeforeEach
   void setUp() {
-    stockRepository.save(new Stock(1L, 100L));
+    stock = new Stock(1L, 100L);
+    stockRepository.save(stock);
   }
 
   @AfterEach
@@ -41,7 +44,7 @@ class RedissonLockStockFacadeTest {
     for (int i = 0; i < threadCount; i++) {
       executorService.submit(() -> {
         try {
-          redissonLockStockFacade.decrease(1L, 1L);
+          redissonLockStockFacade.decrease(stock.getId(), 1L);
         } finally {
           latch.countDown();
         }
@@ -50,7 +53,7 @@ class RedissonLockStockFacadeTest {
 
     latch.await();
 
-    Stock stock = stockRepository.findById(1L).orElseThrow();
-    assertThat(stock.getQuantity()).isZero();
+    Stock persistStock = stockRepository.findById(stock.getId()).orElseThrow();
+    assertThat(persistStock.getQuantity()).isZero();
   }
 }

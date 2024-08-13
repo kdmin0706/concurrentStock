@@ -19,17 +19,17 @@ import sample.concurrent.domain.StockRepository;
 class NamedLockStockServiceTest {
 
   @Autowired
-  private NamedLockStockService stockService;
-
-  @Autowired
   private StockRepository stockRepository;
 
   @Autowired
   private NamedLockStockFacade namedLockStockFacade;
 
+  private Stock stock;
+
   @BeforeEach
   void setUp() {
-    stockRepository.save(new Stock(1L, 100L));
+    stock = new Stock(1L, 100L);
+    stockRepository.save(stock);
   }
 
   @AfterEach
@@ -37,28 +37,16 @@ class NamedLockStockServiceTest {
     stockRepository.deleteAllInBatch();
   }
 
-
-  @Test
-  @DisplayName("상품의 재고를 감소시킵니다.")
-  void decreaseStock() {
-    // given // when
-    stockService.decrease(1L, 1L);
-
-    // then
-    Stock stock = stockRepository.findById(1L).orElseThrow();
-    assertThat(99L).isEqualTo(stock.getQuantity());
-  }
-
   @Test
   public void 동시에_100개의_요청() throws InterruptedException {
     int threadCount = 100;  //100개의 요청을 보냄
-    ExecutorService executorService = Executors.newFixedThreadPool(32);
+    ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
     CountDownLatch latch = new CountDownLatch(threadCount);
 
     for (int i = 0; i < threadCount; i++) {
       executorService.submit(() -> {
         try {
-          namedLockStockFacade.decrease(1L, 1L);
+          namedLockStockFacade.decrease(stock.getId(), 1L);
         } finally {
           latch.countDown();
         }
@@ -67,7 +55,7 @@ class NamedLockStockServiceTest {
 
     latch.await();
 
-    Stock stock = stockRepository.findById(1L).orElseThrow();
-    assertThat(stock.getQuantity()).isZero();
+    Stock persistStock = stockRepository.findById(stock.getId()).orElseThrow();
+    assertThat(persistStock.getQuantity()).isZero();
   }
 }

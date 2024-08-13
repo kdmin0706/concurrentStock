@@ -22,9 +22,12 @@ class LettuceLockStockFacadeTest {
   @Autowired
   private LettuceLockStockFacade lettuceLockStockFacade;
 
+  private Stock stock;
+
   @BeforeEach
   void setUp() {
-    stockRepository.save(new Stock(1L, 100L));
+    stock = new Stock(1L, 100L);
+    stockRepository.save(stock);
   }
 
   @AfterEach
@@ -42,7 +45,7 @@ class LettuceLockStockFacadeTest {
     for (int i = 0; i < threadCount; i++) {
       executorService.submit(() -> {
         try {
-          lettuceLockStockFacade.decrease(1L, 1L);
+          lettuceLockStockFacade.decrease(stock.getId(), 1L);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         } finally {
@@ -53,7 +56,7 @@ class LettuceLockStockFacadeTest {
 
     latch.await();
 
-    Stock stock = stockRepository.findById(1L).orElseThrow();
-    assertThat(stock.getQuantity()).isZero();
+    Stock persistStock = stockRepository.findById(stock.getId()).orElseThrow();
+    assertThat(persistStock.getQuantity()).isZero();
   }
 }
